@@ -2,13 +2,63 @@ import cv2
 import os
 import numpy as np
 import dlib
+import time
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 from PIL import Image
+from utils.yolo import *
+from utils.utils import *
+from torch.autograd import Variable
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+
+def pad_to_square(img, pad_value):
+    c, h, w = img.shape
+    dim_diff = np.abs(h - w)
+    # (upper / left) padding and (lower / right) padding
+    pad1, pad2 = dim_diff // 2, dim_diff - dim_diff // 2
+    # Determine padding
+    pad = (0, 0, pad1, pad2) if h <= w else (pad1, pad2, 0, 0)
+    # Add padding
+    img = F.pad(img, pad, "constant", value=pad_value)
+
+    return img, pad
+
+def resize(image, size):
+    image = F.interpolate(image.unsqueeze(0), size=size, mode="nearest")
+    return image
+
+class YOLOv3():
+    def __init__(self,conf_thres = 0.5, nms_thres = 0.4):
+        self.conf_thres = conf_thres
+        self.nms_thres = nms_thres
+        self.img_size = 416
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = Darknet('Data/cfg/detectHeadInference.cfg', img_size=self.img_size).to(device)
+        model.load_darknet_weights('Data/cfg/detectHead_58000.weights')
+        model.eval()
+        self.model = model
+
+    def detect(self, ori_img):
+        Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
+        img = transforms.ToTensor()(ori_img).cuda()
+        img, _ = pad_to_square(img, 0)
+        img = resize(img, self.img_size)
+        with torch.no_grad():
+            detections = self.model(img)
+            detections = non_max_suppression(detections, self.conf_thres, self.nms_thres)[0]
+            if detections is None:
+                return []
+            
+        detections = rescale_boxes(detections, self.img_size, ori_img.shape[:2])
+        detections =  detections.detach().cpu().numpy()
+        #detections[:4] = detections[:4].astype(np.int)
+        return detections
+
 
 class mtcnn_detector():
     def __init__(self):
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = MTCNN(keep_all=True,device=device)
     def detect(self, img):
         img = Image.fromarray(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))
@@ -106,4 +156,3 @@ if __name__ == "__main__":
     d = mtcnn_detector()
     img = cv2.imread('1.jpg')
     boxs = d.detect(img)
-    print(boxs)

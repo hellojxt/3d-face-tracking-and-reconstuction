@@ -3,5 +3,6 @@
 *.dat
 .vscode/
 Data/
+headtracker_sequences/
 *.avi
 *.mp4
