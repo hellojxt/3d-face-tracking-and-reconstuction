@@ -5,16 +5,23 @@
 
 ## 环境要求
 * Python 3.7 (numpy, opencv, scipy, pillow, pytorch, pycuda)
-* GPU, cuda
+* GPU, Cuda >= 10.1
 
 推荐使用Anaconda：
-`conda env create -f environment.yml`
-`conda activate 3df`
+```
+conda env create -f environment.yml
+conda activate 3df
+```
 即可配置完毕
 
 ## 运行方式
-`python change_face.py <input_path> <output_path>`
-比如可以测试`python change_face example.mp4 output.mp4`
+```
+python change_face.py <input_path> <output_path>
+```
+比如可以测试
+```
+python change_face example.mp4 output.mp4
+```
 根目录下的output.mp4是已经生成好的视频
 
 ## 速度
