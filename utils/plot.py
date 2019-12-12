@@ -9,8 +9,9 @@ def plot_kpt(image, kpt):
         image: the input image
         kpt: (68, 3).
     '''
+
     image = image.copy()
-    kpt = np.round(kpt).astype(np.int32)
+    kpt = np.round(kpt.transpose()).astype(np.int32)
     for i in range(kpt.shape[0]):
         st = kpt[i, :2]
         image = cv2.circle(image, (st[0], st[1]), 1, (0, 0, 255), 2)

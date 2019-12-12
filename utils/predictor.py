@@ -111,7 +111,8 @@ class predictor():
         model.eval()
         self.model = model
         import scipy.io as sio
-        self.tri = sio.loadmat('Data/tri.mat')['tri']
+        self.tri = sio.loadmat('Data/tri.mat')['tri'] - 1
+        self.colors = np.load('Data/texture.npy')
         self.transform = transforms.Compose([ToTensorGjz(), NormalizeGjz(mean=127.5, std=128)])
 
 
@@ -127,6 +128,7 @@ class predictor():
         return predict_vertices(param, roi_box, False)
 
     def dense_vertices(self, param, roi_box):
-        return predict_vertices(param, roi_bbox, True)
+        return predict_vertices(param, roi_box, True)
+
 
 
