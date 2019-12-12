@@ -2,7 +2,7 @@
 *.pyc
 *.dat
 .vscode/
-Data/
+Data/*
 headtracker_sequences/
 *.avi
 *.mp4
