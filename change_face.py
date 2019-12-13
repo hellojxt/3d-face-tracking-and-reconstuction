@@ -11,6 +11,7 @@ from utils.detector import YOLOv3
 import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 
 class video_loader():
     def __init__(self, path):
@@ -52,6 +53,8 @@ if __name__ == "__main__":
 
     frame_idx = 0
     for im in video.list:
+        frame_idx += 1
+
         start = time.time()
         #print('detection:')
         detections = detector.detect(im)
@@ -67,10 +70,6 @@ if __name__ == "__main__":
         for detection,id in zip(detections,ids):
             detection = detection.astype(np.int)
             img = crop_img(im,detection[:4])
-            cv2.rectangle(im, 
-                (detection[0], detection[1]), 
-                (detection[2], detection[3]), 
-                COLORS_10[id], 2)
             label = "id:{}".format(id)
             t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 2 , 2)[0]
             cv2.putText(im,label,
@@ -83,8 +82,6 @@ if __name__ == "__main__":
             detection = new_box.astype(np.int)
             img = crop_img(im,detection[:4])
             params = predictor.predict(img)
-            kpt = predictor.pst68(params, detection[:4])
-            im = plot_kpt(im,kpt)
             if id == 0:
                 vertices = predictor.dense_vertices(params, detection[:4])
                 tris = predictor.tri
@@ -93,14 +90,24 @@ if __name__ == "__main__":
                     drv.In(vertices.astype(np.float32)), 
                     drv.In(np.ascontiguousarray(tris).astype(np.int32)), 
                     drv.In(colors.astype(np.float32)),
-                    drv.In((np.zeros((im.shape[0],im.shape[1]))-99999).astype(np.int32)),
                     drv.InOut(im),
+                    drv.In((np.zeros((im.shape[0],im.shape[1]))-99999).astype(np.int32)),
                     block=(400,1,1), grid=(500,1)
                 )
+            else:
+                kpt = predictor.pst68(params, detection[:4])
+                im = plot_kpt(im,kpt)
+            cv2.rectangle(im, 
+            (detection[0], detection[1]), 
+            (detection[2], detection[3]), 
+            COLORS_10[0], 2)
         #print('deep sort:')
         #print(detections)
         print(time.time() - start)
+        
         output.write(im)
+        cv2.imwrite('test.png',im)
+
 
     output.release()
         

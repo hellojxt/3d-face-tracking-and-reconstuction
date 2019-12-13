@@ -8,6 +8,15 @@ struct fPoint{
     }
 };
 
+struct fPoint4{
+	float x,y,z,a;
+	__device__ fPoint4(float x_, float y_, float z_,float a_){
+        x = x_;
+        y = y_;
+        z = z_;
+        a = a_;
+    }
+};
 __device__ fPoint Pmin(fPoint p1, fPoint p2){
 	float x = p1.x;
 	if (p2.x < x)
@@ -49,7 +58,7 @@ __device__ bool PointInTriangle (fPoint pt, fPoint v1, fPoint v2, fPoint v3)
 }
 
 __global__  void render(float vertices[3][53215], int tris[3][105840], 
-                        float colors[3][53215], int depth[WIDTH][HEIGHT], char image[WIDTH][HEIGHT][3]){
+                        float colors[4][53215],unsigned char image[WIDTH][HEIGHT][3], int depth[WIDTH][HEIGHT]){
     const int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i >= 105840){
 		return;
@@ -59,9 +68,9 @@ __global__  void render(float vertices[3][53215], int tris[3][105840],
 	fPoint v1(vertices[0][int(tris[0][i])],vertices[1][int(tris[0][i])],vertices[2][int(tris[0][i])]);
 	fPoint v2(vertices[0][int(tris[1][i])],vertices[1][int(tris[1][i])],vertices[2][int(tris[1][i])]);
 	fPoint v3(vertices[0][int(tris[2][i])],vertices[1][int(tris[2][i])],vertices[2][int(tris[2][i])]);
-	fPoint c1(colors[0][int(tris[0][i])],colors[1][int(tris[0][i])],colors[2][int(tris[0][i])]);
-	fPoint c2(colors[0][int(tris[1][i])],colors[1][int(tris[1][i])],colors[2][int(tris[1][i])]);
-	fPoint c3(colors[0][int(tris[2][i])],colors[1][int(tris[2][i])],colors[2][int(tris[2][i])]);
+	fPoint4 c1(colors[0][int(tris[0][i])],colors[1][int(tris[0][i])],colors[2][int(tris[0][i])],colors[3][int(tris[0][i])]);
+	fPoint4 c2(colors[0][int(tris[1][i])],colors[1][int(tris[1][i])],colors[2][int(tris[1][i])],colors[3][int(tris[1][i])]);
+	fPoint4 c3(colors[0][int(tris[2][i])],colors[1][int(tris[2][i])],colors[2][int(tris[2][i])],colors[3][int(tris[2][i])]);
 	fPoint leftup = Pmin(Pmin(v1,v2),v3);
 	fPoint rightdown = Pmax(Pmax(v1,v2),v3);
 	for (int x = int(leftup.x);x <= int(rightdown.x);x++)
@@ -71,9 +80,10 @@ __global__  void render(float vertices[3][53215], int tris[3][105840],
 				int d = int((v1.z+v2.z+v3.z)/3);
                 atomicMax(&depth[y][x],d);
                 if (depth[y][x] == d){
-					image[y][x][0] = (c1.x+c2.x+c3.x)/3;
-					image[y][x][1] = (c1.y+c2.y+c3.y)/3;
-					image[y][x][2] = (c1.z+c2.z+c3.z)/3;
+                    double a = (c1.a+c2.a+c3.a)/3;
+					image[y][x][0] = (c1.x+c2.x+c3.x)/3*a+ image[y][x][0]*(1-a);
+					image[y][x][1] = (c1.y+c2.y+c3.y)/3*a+ image[y][x][1]*(1-a);
+                    image[y][x][2] = (c1.z+c2.z+c3.z)/3*a+ image[y][x][2]*(1-a);
 				}
             }
 		}

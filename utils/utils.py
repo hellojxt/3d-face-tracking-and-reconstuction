@@ -341,7 +341,7 @@ def parse_roi_box_from_landmark(pts):
     center_x = (bbox[2] + bbox[0]) / 2
     center_y = (bbox[3] + bbox[1]) / 2
 
-    llength = llength * 0.9
+    llength = llength * 0.8
 
     roi_box = [0] * 4
     roi_box[0] = center_x - llength / 2
@@ -430,7 +430,6 @@ def render_texture(vertices, colors, triangles, h, w, c = 3):
     '''
     # initial 
     image = np.zeros((h, w, c))
-
     depth_buffer = np.zeros([h, w]) - 999999.
     # triangle depth: approximate the depth to the average value of z in each vertex(v0, v1, v2), since the vertices are closed to each other
     tri_depth = (vertices[2, triangles[0,:]] + vertices[2,triangles[1,:]] + vertices[2, triangles[2,:]])/3. 
@@ -453,5 +452,5 @@ def render_texture(vertices, colors, triangles, h, w, c = 3):
             for v in range(vmin, vmax+1):
                 if tri_depth[i] > depth_buffer[v, u] and isPointInTri([u,v], vertices[:2, tri]): 
                     depth_buffer[v, u] = tri_depth[i]
-                    image[v, u, :] = tri_tex[:, i]
+                    image[v, u, :] = tri_tex[:3, i] * tri_tex[3,i]
     return image
